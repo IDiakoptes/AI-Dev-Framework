@@ -38,3 +38,11 @@ Use this as a starting point and customize for your repository.
 ## Repository Context
 - Read `.github/repository-context.md` when available.
 - If repository context is missing, infer only from observable files and explicit user input.
+
+## Automated Issue Development Orchestration (If Installed)
+- If `.github/workflows/ai-development.yml` is installed, the exact `ai-development` issue label
+  starts an automated Plan → Implement → Review → (Fix → Review)\* → Document run for that issue.
+- Treat its `ai-complete` label as "the automated lifecycle finished, pull request awaiting human
+  review" — not as merged or approved. No workflow in this repository merges, auto-merges, or
+  approves on an agent's behalf; do not add one without a plan update.
+- See `docs/automated-issue-workflow.md` in the framework repository for the full state model.
