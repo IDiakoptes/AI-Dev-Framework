@@ -1,0 +1,37 @@
+name: Framework Validation
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate-framework:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Verify required framework files
+        run: |
+          test -f .github/agents/planning-agent.agent.md
+          test -f .github/agents/implementation-agent.agent.md
+          test -f .github/agents/code-review-agent.agent.md
+          test -f .github/agents/documentation-agent.agent.md
+          test -f templates/copilot-instructions.md
+          test -f templates/repository-context.md
+
+      - name: Verify placeholder values were removed
+        run: |
+          if rg -n "REPLACE_WITH_(PROJECT|VALUE)" .; then
+            echo "Found unresolved placeholder values."
+            exit 1
+          fi
+
+      - name: Validate install script parses
+        shell: pwsh
+        run: |
+          $null = [System.Management.Automation.PSParser]::Tokenize((Get-Content -LiteralPath './scripts/install-ai-framework.ps1' -Raw), [ref]$null)
+          Write-Host 'PowerShell parse OK'
