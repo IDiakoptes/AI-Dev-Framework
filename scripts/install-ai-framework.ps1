@@ -21,7 +21,7 @@ function Write-Result {
     Write-Host "[$Status] $Path - $Message"
 }
 
-function Ensure-Directory {
+function Initialize-Directory {
     param([string]$Path)
 
     if (-not (Test-Path -LiteralPath $Path)) {
@@ -55,7 +55,7 @@ function Copy-IfAllowed {
     Write-Result -Status 'CREATED' -Path $Destination -Message 'File copied'
 }
 
-$scriptRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
+$scriptRoot = $PSScriptRoot
 $frameworkRoot = Split-Path -Parent $scriptRoot
 
 $resolvedRepoPath = Resolve-Path -LiteralPath $RepositoryPath -ErrorAction Stop
@@ -77,7 +77,7 @@ $pathsToEnsure = @(
 )
 
 foreach ($relativePath in $pathsToEnsure) {
-    Ensure-Directory -Path (Join-Path $targetRoot $relativePath)
+    Initialize-Directory -Path (Join-Path $targetRoot $relativePath)
 }
 
 $filesToCopy = @(
@@ -98,12 +98,12 @@ $filesToCopy = @(
     'docs/configuration.md',
     'docs/agents.md',
     'docs/workflow.md',
-    'docs/customization.md'
+    'docs/customization.md',
+    'scripts/install-ai-framework.ps1'
 )
 
 if ($IncludeWorkflows) {
     $filesToCopy += '.github/workflows/framework-validation.yml'
-    Ensure-Directory -Path (Join-Path $targetRoot '.github/workflows')
 }
 
 foreach ($relativeFile in $filesToCopy) {
@@ -111,7 +111,7 @@ foreach ($relativeFile in $filesToCopy) {
     $destination = Join-Path $targetRoot $relativeFile
 
     $destinationDir = Split-Path -Parent $destination
-    Ensure-Directory -Path $destinationDir
+    Initialize-Directory -Path $destinationDir
 
     Copy-IfAllowed -Source $source -Destination $destination
 }

@@ -35,7 +35,7 @@ Evaluate implementation quality against requirements and plan.
 - **Low**: minor issue
 
 # Output
-Write review to `.github/reviews/<task-slug>.review.md` with:
+Write review to `.github/reviews/YYYYMMDD-<short-task-slug>.review.md` with:
 - Requirements reviewed
 - Plan reviewed
 - Findings (severity, evidence, recommendation)

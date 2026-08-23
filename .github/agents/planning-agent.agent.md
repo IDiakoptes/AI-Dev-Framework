@@ -29,7 +29,7 @@ Create an implementation-ready plan without modifying code.
 - Provide verification steps and handoff notes for Implementation Agent.
 
 # Output Requirements
-Write the plan to `.github/plans/<task-slug>.plan.md` using repository conventions.
+Write the plan to `.github/plans/YYYYMMDD-<short-task-slug>.plan.md` using repository conventions.
 Include at minimum:
 - Task summary
 - Current state

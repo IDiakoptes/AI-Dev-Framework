@@ -25,7 +25,7 @@ jobs:
 
       - name: Verify placeholder values were removed
         run: |
-          if rg -n "REPLACE_WITH_(PROJECT|VALUE)" .; then
+          if grep -REn --exclude-dir=.git "REPLACE_WITH_(PROJECT|VALUE)" .; then
             echo "Found unresolved placeholder values."
             exit 1
           fi
@@ -33,5 +33,10 @@ jobs:
       - name: Validate install script parses
         shell: pwsh
         run: |
-          $null = [System.Management.Automation.PSParser]::Tokenize((Get-Content -LiteralPath './scripts/install-ai-framework.ps1' -Raw), [ref]$null)
+          $errors = $null
+          [System.Management.Automation.PSParser]::Tokenize((Get-Content -LiteralPath './scripts/install-ai-framework.ps1' -Raw), [ref]$errors) | Out-Null
+          if ($errors) {
+            $errors | Format-List | Out-String | Write-Host
+            throw 'PowerShell parse failed'
+          }
           Write-Host 'PowerShell parse OK'

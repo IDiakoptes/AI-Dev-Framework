@@ -13,3 +13,6 @@ Add technology-specific instructions as needed, for example:
 - `.github/instructions/python.instructions.md`
 - `.github/instructions/azure.instructions.md`
 - `.github/instructions/database.instructions.md`
+
+## Placeholder Convention
+If you use the optional `framework-validation.yml`, keep placeholder text in the `REPLACE_WITH_<VALUE>` style so automated checks can detect unresolved template values.
