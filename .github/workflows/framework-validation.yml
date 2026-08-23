@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
       - name: Verify required framework files
         run: |
@@ -22,6 +22,11 @@ jobs:
           test -f .github/agents/documentation-agent.agent.md
           test -f templates/copilot-instructions.md
           test -f templates/repository-context.md
+          test -f .github/workflows/ai-development.yml
+          test -f .github/workflows/ai-development-watchdog.yml
+          test -f .github/scripts/ai-development-controller.mjs
+          test -f .github/scripts/ai-development-controller.test.mjs
+          test -f docs/automated-issue-workflow.md
 
       - name: Verify placeholder values were removed
         run: |
@@ -40,3 +45,74 @@ jobs:
             throw 'PowerShell parse failed'
           }
           Write-Host 'PowerShell parse OK'
+
+      - name: Install actionlint
+        run: go install github.com/rhysd/actionlint/cmd/actionlint@v1.7.12
+
+      - name: Lint AI development workflows
+        run: |
+          actionlint \
+            .github/workflows/framework-validation.yml \
+            .github/workflows/ai-development.yml \
+            .github/workflows/ai-development-watchdog.yml
+
+      - name: Run AI development controller unit tests
+        run: node --test .github/scripts/ai-development-controller.test.mjs
+
+      - name: Verify controller trigger, concurrency, and permission shape
+        run: |
+          grep -q "types: \[opened, labeled\]" .github/workflows/ai-development.yml
+          grep -q "cancel-in-progress: false" .github/workflows/ai-development.yml
+          grep -q "github.repository_id" .github/workflows/ai-development.yml
+          grep -q "id-token: none" .github/workflows/ai-development.yml
+          grep -q "contents: write" .github/workflows/ai-development.yml
+          grep -q "issues: write" .github/workflows/ai-development-watchdog.yml
+          if grep -Eq "id-token:|contents: write|actions: write" .github/workflows/ai-development-watchdog.yml; then
+            echo "Watchdog must not request id-token, actions:write, or contents:write."
+            exit 1
+          fi
+
+      - name: Verify AI development state labels are defined and documented
+        run: |
+          for label in ai-development ai-planning ai-implementation ai-review \
+            ai-changes-requested ai-documentation ai-complete ai-failed; do
+            grep -q "$label" .github/scripts/ai-development-controller.mjs || {
+              echo "Missing label '$label' in controller script"
+              exit 1
+            }
+            grep -q "$label" docs/automated-issue-workflow.md || {
+              echo "Missing label '$label' in docs/automated-issue-workflow.md"
+              exit 1
+            }
+          done
+
+      - name: Verify workflow actions are pinned to immutable commit SHAs
+        run: |
+          for f in .github/workflows/ai-development.yml .github/workflows/ai-development-watchdog.yml; do
+            while IFS= read -r line; do
+              if ! echo "$line" | grep -Eq "uses: [A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+@[0-9a-f]{40}"; then
+                echo "Non-SHA-pinned action reference in $f: $line"
+                exit 1
+              fi
+            done < <(grep -E "^\s*uses:" "$f")
+          done
+
+      - name: Verify no merge/auto-merge operation exists
+        run: |
+          if grep -RInE "enablePullRequestAutoMerge|merge_method|auto_merge|mergePullRequest|/merge['\"]" \
+            .github/workflows/ai-development.yml \
+            .github/workflows/ai-development-watchdog.yml \
+            .github/scripts/ai-development-controller.mjs; then
+            echo "Forbidden merge/auto-merge operation found."
+            exit 1
+          fi
+
+      - name: Verify issue title/body are never interpolated into shell
+        run: |
+          if grep -RInE '\$\{\{[[:space:]]*github\.event\.issue\.(title|body)' \
+            .github/workflows/ai-development.yml \
+            .github/workflows/ai-development-watchdog.yml; then
+            echo "Unsafe direct interpolation of issue title/body detected."
+            exit 1
+          fi
+

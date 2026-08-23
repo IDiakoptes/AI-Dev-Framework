@@ -59,3 +59,6 @@
 - Plan/review artifact naming preferences:
 - Required approval gates:
 - Maximum review/fix iterations (default 3):
+- Automated issue development orchestration (if installed): `AI_DEVELOPMENT_MAX_ITERATIONS`
+  override (default 3, max 10), and any repository-specific human merge/approval policy for the
+  pull requests it opens:

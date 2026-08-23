@@ -1,0 +1,89 @@
+name: AI Development Controller
+
+# Implements the controller described in
+# .github/plans/20260823-ai-issue-development-orchestration.plan.md
+#
+# Opt-in only: nothing in this workflow runs unless the exact `ai-development`
+# label is already present on `opened`, or is the exact label added on
+# `labeled`. The job-level `if:` below is a cheap pre-filter only; GitHub
+# Actions string comparisons (`==`, `contains`) are case-insensitive, so the
+# authoritative, case-sensitive, exact-label qualification check is performed
+# again by .github/scripts/ai-development-controller.mjs before any Agent
+# Tasks call is made. `workflow_dispatch`/`workflow_call` never trust
+# caller-supplied state either: the controller re-fetches the issue and its
+# labels before doing anything.
+
+on:
+  issues:
+    types: [opened, labeled]
+  workflow_dispatch:
+    inputs:
+      issue_number:
+        description: >-
+          Issue number to resume. The issue must already carry the exact
+          ai-development label; this is re-verified before any action is
+          taken.
+        required: true
+        type: number
+  workflow_call:
+    inputs:
+      issue_number:
+        description: >-
+          Issue number to resume. The issue must already carry the exact
+          ai-development label; this is re-verified before any action is
+          taken.
+        required: true
+        type: number
+    secrets:
+      COPILOT_AGENT_TOKEN:
+        description: >-
+          Fine-grained user-to-server token (Agent Tasks read/write only)
+          used solely to start/poll Copilot cloud agent tasks for this call.
+        required: true
+
+run-name: >-
+  AI development: issue #${{ github.event.issue.number || inputs.issue_number }}
+
+permissions:
+  actions: none
+  attestations: none
+  checks: none
+  contents: write
+  deployments: none
+  discussions: none
+  id-token: none
+  issues: write
+  packages: none
+  pages: none
+  pull-requests: write
+  repository-projects: none
+  security-events: none
+  statuses: none
+
+concurrency:
+  group: >-
+    ai-development-${{ github.repository_id }}-${{ github.event.issue.number || inputs.issue_number }}
+  cancel-in-progress: false
+
+jobs:
+  controller:
+    if: >-
+      (github.event_name == 'issues' && github.event.action == 'opened' && contains(github.event.issue.labels.*.name, 'ai-development')) ||
+      (github.event_name == 'issues' && github.event.action == 'labeled' && github.event.label.name == 'ai-development') ||
+      github.event_name == 'workflow_dispatch' ||
+      github.event_name == 'workflow_call'
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - name: Checkout trusted default branch (no PR-head content)
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+
+      - name: Run AI development controller
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          COPILOT_AGENT_TOKEN: ${{ secrets.COPILOT_AGENT_TOKEN }}
+          ISSUE_NUMBER: ${{ github.event.issue.number || inputs.issue_number }}
+          AI_DEVELOPMENT_MAX_ITERATIONS: ${{ vars.AI_DEVELOPMENT_MAX_ITERATIONS }}
+        run: node .github/scripts/ai-development-controller.mjs

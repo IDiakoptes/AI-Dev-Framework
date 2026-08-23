@@ -71,6 +71,7 @@ $pathsToEnsure = @(
     '.github/instructions',
     '.github/plans',
     '.github/reviews',
+    '.github/scripts',
     'templates',
     'docs',
     'scripts'
@@ -99,11 +100,16 @@ $filesToCopy = @(
     'docs/agents.md',
     'docs/workflow.md',
     'docs/customization.md',
+    'docs/automated-issue-workflow.md',
     'scripts/install-ai-framework.ps1'
 )
 
 if ($IncludeWorkflows) {
     $filesToCopy += '.github/workflows/framework-validation.yml'
+    $filesToCopy += '.github/workflows/ai-development.yml'
+    $filesToCopy += '.github/workflows/ai-development-watchdog.yml'
+    $filesToCopy += '.github/scripts/ai-development-controller.mjs'
+    $filesToCopy += '.github/scripts/ai-development-controller.test.mjs'
 }
 
 foreach ($relativeFile in $filesToCopy) {

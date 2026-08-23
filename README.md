@@ -14,6 +14,7 @@ This repository provides reusable planning, implementation, review, and document
 - Reusable instruction set
 - Plan/review artifact conventions
 - Optional framework validation workflow
+- Optional automated issue development orchestration (Actions controller + watchdog)
 - Safe installation script for existing repositories
 
 ## Repository Structure
@@ -21,6 +22,8 @@ This repository provides reusable planning, implementation, review, and document
 - `.github/instructions/` reusable workflow/security/testing/documentation rules
 - `.github/plans/` implementation plan artifacts
 - `.github/reviews/` review artifacts
+- `.github/scripts/` controller script and unit tests for automated issue orchestration
+- `.github/workflows/` optional validation, controller, and watchdog workflows
 - `templates/` repository customization templates
 - `scripts/install-ai-framework.ps1` installer
 - `docs/` framework documentation
@@ -48,6 +51,15 @@ Plan → Implement → Review → (Fix → Review)* → Document
 
 Default max fix/review iterations: 3, then require human intervention.
 
+## Automated Issue Development Orchestration (Optional)
+An opt-in GitHub Actions controller can run this same lifecycle for one GitHub issue at a time.
+It starts only when the exact `ai-development` label is present on issue creation or is later
+added, calls the existing four agents directly through the Copilot Agent Tasks API against one
+`ai/issue-<number>-<slug>` branch and draft pull request, and never merges, auto-merges, or
+approves that pull request — a human remains responsible for that decision. See
+[`docs/automated-issue-workflow.md`](docs/automated-issue-workflow.md) for prerequisites,
+required label/secret setup, the state model, and troubleshooting.
+
 ## Plans and Reviews
 - Plans: `.github/plans/`
 - Reviews: `.github/reviews/`
@@ -58,8 +70,10 @@ Use predictable names:
 
 ## Automation Support
 - **Fully supported**: Manual agent-driven workflow with plan/review artifacts.
-- **Partially supported**: Generic framework validation workflow.
-- **Manual**: End-to-end autonomous agent orchestration (platform-dependent).
+- **Partially supported**: Generic framework validation workflow; optional automated issue
+  development orchestration (public-preview Agent Tasks API, opt-in per issue).
+- **Manual**: Merging the pull request produced by any workflow; no workflow in this repository
+  merges or approves on an agent's behalf.
 
 ## Security
 - No credentials or secrets should be stored in framework files.

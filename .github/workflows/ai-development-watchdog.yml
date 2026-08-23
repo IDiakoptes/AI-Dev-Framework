@@ -1,0 +1,38 @@
+name: AI Development Watchdog
+
+# Implements the watchdog described in
+# .github/plans/20260823-ai-issue-development-orchestration.plan.md
+#
+# Recovers from an abnormal AI Development Controller termination
+# (cancellation, timeout, or a crash that skips the controller's own
+# try/catch cleanup). This workflow never checks out, reads, or executes any
+# pull-request-head content: it only reads the trusted `workflow_run` event
+# payload (conclusion, run URL, run name) and the repository's own default
+# branch to load `.github/scripts/ai-development-controller.mjs`.
+
+on:
+  workflow_run:
+    workflows: ['AI Development Controller']
+    types: [completed]
+
+permissions:
+  actions: read
+  contents: read
+  issues: write
+  pull-requests: read
+
+jobs:
+  watchdog:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout trusted default branch (no PR-head content)
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          persist-credentials: false
+
+      - name: Recover abnormal controller terminations
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: node .github/scripts/ai-development-controller.mjs
